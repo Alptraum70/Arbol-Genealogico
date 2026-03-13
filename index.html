@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Árbol Familiar Compartido</title>
+    <style>
+        :root { --verde: #28a745; --azul: #4a90e2; --gris: #f4f7f6; }
+        body { font-family: sans-serif; background: var(--gris); text-align: center; padding: 20px; }
+        .seccion { display: none; max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .visible { display: block; }
+        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
+        button { padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 5px; width: 95%; }
+        .btn-azul { background: var(--azul); color: white; }
+        .btn-add { background: var(--verde); color: white; width: auto; margin-bottom: 20px; }
+        .arbol-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
+        .card { background: white; padding: 15px; border-radius: 10px; width: 150px; border-bottom: 4px solid var(--azul); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    </style>
+
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
+</head>
+<body>
+
+    <div id="auth-section" class="seccion visible">
+        <h2>🌳 Acceso al Árbol</h2>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Contraseña">
+        <button class="btn-azul" onclick="login()">Entrar al Árbol</button>
+        <button style="background:none; color:var(--azul);" onclick="registro()">¿Primera vez? Regístrate aquí</button>
+    </div>
+
+    <div id="app-section" class="seccion" style="max-width: 1000px; background: transparent; box-shadow: none;">
+        <button onclick="firebase.auth().signOut()" style="width:auto; float:right;">Cerrar Sesión</button>
+        <h1>🌳 Nuestro Árbol</h1>
+        <button class="btn-add" onclick="añadirFamiliar()">➕ Añadir Familiar</button>
+        <div id="arbol" class="arbol-container"></div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCDpjRUFv6OXId1Ag0a_XqcQ5f9Try74Bs",
+            authDomain: "://firebaseapp.com",
+            projectId: "family-tree-bb9e7",
+            storageBucket: "family-tree-bb9e7.firebasestorage.app",
+            messagingSenderId: "353168063870",
+            appId: "1:353168063870:web:bf15f68cdba86b359f472f"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        function registro() {
+            const e = document.getElementById('email').value;
+            const p = document.getElementById('password').value;
+            if(!e || p.length < 6) return alert("Escribe un email y una contraseña de al menos 6 letras");
+            auth.createUserWithEmailAndPassword(e, p)
+                .then(() => alert("¡Cuenta creada! Ya puedes entrar"))
+                .catch(err => alert("Error: " + err.message));
+        }
+
+        function login() {
+            const e = document.getElementById('email').value;
+            const p = document.getElementById('password').value;
+            auth.signInWithEmailAndPassword(e, p).catch(err => alert("Error: " + err.message));
+        }
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('app-section').style.display = 'block';
+                cargarArbol();
+            } else {
+                document.getElementById('auth-section').style.display = 'block';
+                document.getElementById('app-section').style.display = 'none';
+            }
+        });
+
+        function añadirFamiliar() {
+            const n = prompt("Nombre:");
+            const p = prompt("Parentesco (ej: Abuelo):");
+            if(n) db.collection("familiares").add({ nombre: n, parentesco: p, creadoPor: auth.currentUser.email, fecha: firebase.firestore.FieldValue.serverTimestamp() });
+        }
+
+        function cargarArbol() {
+            db.collection("familiares").orderBy("fecha", "asc").onSnapshot(snap => {
+                const cont = document.getElementById('arbol');
+                cont.innerHTML = '';
+                snap.forEach(doc => {
+                    const f = doc.data();
+                    cont.innerHTML += `<div class="card"><strong>${f.nombre}</strong><br><small>${f.parentesco}</small></div>`;
+                });
+            });
+        }
+    </script>
+</body>
+</html>
