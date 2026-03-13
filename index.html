@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Árbol Familiar</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 300px; text-align: center; }
+        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; background: #4a90e2; color: white; }
+        #app-section { display: none; text-align: center; width: 100%; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-section" class="card">
+        <h2>🌳 Mi Árbol</h2>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Contraseña (6+ letras)">
+        <button onclick="login()">Entrar al Árbol</button>
+        <button style="background:none; color:#4a90e2; font-size:13px;" onclick="registro()">Registrarme por primera vez</button>
+    </div>
+
+    <div id="app-section">
+        <h1>🌳 Panel del Árbol</h1>
+        <button onclick="firebase.auth().signOut()" style="width:auto; background:#666; color:white;">Salir</button>
+        <button onclick="add()" style="width:auto; background:#28a745; padding: 15px; color:white;">➕ Añadir Familiar</button>
+        <div id="lista" style="margin-top:20px; display:flex; flex-wrap:wrap; justify-content:center; gap:10px;"></div>
+    </div>
+
+    <!-- CARGA DE LIBRERÍAS AL FINAL PARA QUE NO SE BLOQUEEN -->
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
+
+    <script>
+        const config = {
+            apiKey: "AIzaSyCDpjRUFv6OXId1Ag0a_XqcQ5f9Try74Bs",
+            authDomain: "://firebaseapp.com",
+            projectId: "family-tree-bb9e7",
+            storageBucket: "family-tree-bb9e7.firebasestorage.app",
+            messagingSenderId: "353168063870",
+            appId: "1:353168063870:web:bf15f68cdba86b359f472f"
+        };
+
+        // FUNCIÓN DE SEGURIDAD: ESPERA A QUE GOOGLE CARGUE
+        function iniciar() {
+            if (typeof firebase !== 'undefined') {
+                if (!firebase.apps.length) firebase.initializeApp(config);
+                firebase.auth().onAuthStateChanged(user => {
+                    if (user) {
+                        document.getElementById('auth-section').style.display = 'none';
+                        document.getElementById('app-section').style.display = 'block';
+                        show();
+                    } else {
+                        document.getElementById('auth-section').style.display = 'block';
+                        document.getElementById('app-section').style.display = 'none';
+                    }
+                });
+            } else {
+                setTimeout(iniciar, 1000); // Reintenta cada segundo hasta que conecte
+            }
+        }
+        iniciar();
+
+        function registro() {
+            if (typeof firebase === 'undefined') return alert("Google aún no ha conectado. Espera 5 segundos y vuelve a pulsar.");
+            const e = document.getElementById('email').value;
+            const p = document.getElementById('password').value;
+            if(!e || p.length < 6) return alert("Escribe un email y clave de 6 letras.");
+            firebase.auth().createUserWithEmailAndPassword(e, p)
+                .then(() => alert("¡Registrado con éxito! Ya puedes entrar."))
+                .catch(err => alert("Error: " + err.message));
+        }
+
+        function login() {
+            if (typeof firebase === 'undefined') return alert("Conectando con Google...");
+            const e = document.getElementById('email').value;
+            const p = document.getElementById('password').value;
+            firebase.auth().signInWithEmailAndPassword(e, p).catch(err => alert("Error: " + err.message));
+        }
+
+        function add() {
+            const n = prompt("Nombre:");
+            if(n) firebase.firestore().collection("familiares").add({ nombre: n, fecha: Date.now() });
+        }
+
+        function show() {
+            firebase.firestore().collection("familiares").orderBy("fecha", "asc").onSnapshot(snap => {
+                const cont = document.getElementById('lista');
+                cont.innerHTML = '';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    cont.innerHTML += `<div style="background:white; padding:15px; border-radius:10px; width:140px; border-bottom:4px solid #4a90e2;"><strong>${d.nombre}</strong></div>`;
+                });
+            });
+        }
+    </script>
+</body>
+</html>
