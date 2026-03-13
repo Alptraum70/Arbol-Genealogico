@@ -1,31 +1,43 @@
-<script src="https://gstatic.com"></script>
-<script src="https://gstatic.com"></script>
-<script src="https://gstatic.com"></script>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Árbol Familiar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuestro Árbol Familiar</title>
+    
+    <!-- LIBRERÍAS DE GOOGLE CORREGIDAS -->
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
+
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 280px; text-align: center; }
-        input { width: 90%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; background: #4a90e2; color: white; }
+        :root { --azul: #4a90e2; --verde: #28a745; --gris: #f4f7f6; }
+        body { font-family: sans-serif; background: var(--gris); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 320px; text-align: center; }
+        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; background: var(--azul); color: white; }
+        #app-section { display: none; width: 95%; max-width: 1000px; text-align: center; }
+        .grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 20px; }
+        .f-card { background: white; padding: 20px; border-radius: 12px; width: 160px; border-bottom: 5px solid var(--azul); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
+
     <div id="auth-section" class="card">
-        <h2>🌳 Mi Árbol</h2>
+        <h2>🌳 Acceso al Árbol</h2>
         <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Clave (6+ letras)">
-        <button onclick="login()">ENTRAR</button>
-        <button style="background:none; color:#4a90e2; font-size:12px;" onclick="registro()">REGISTRARME AQUÍ</button>
+        <input type="password" id="password" placeholder="Contraseña (mín. 6 letras)">
+        <button onclick="login()">Entrar</button>
+        <button style="background:none; color:var(--azul); border:none; cursor:pointer;" onclick="registro()">Registrarme por primera vez</button>
     </div>
-    <div id="app-section" style="display:none; text-align:center;">
-        <h1>🌳 Panel Familiar</h1>
-        <button onclick="add()" style="background:#28a745; width:auto; padding: 15px 30px;">➕ Añadir Familiar</button>
-        <div id="lista" style="margin-top:20px;"></div>
+
+    <div id="app-section">
+        <button onclick="firebase.auth().signOut()" style="width:auto; float:right; background:#666; color:white; padding: 8px 15px;">Cerrar Sesión</button>
+        <h1 style="color:#333">🌳 Árbol Familiar</h1>
+        <button onclick="add()" style="background:var(--verde); color:white; width:auto; padding: 15px 30px; font-size: 18px;">➕ Añadir Familiar</button>
+        <div id="arbol" class="grid"></div>
     </div>
+
     <script>
         const config = {
             apiKey: "AIzaSyCDpjRUFv6OXId1Ag0a_XqcQ5f9Try74Bs",
@@ -35,38 +47,48 @@
             messagingSenderId: "353168063870",
             appId: "1:353168063870:web:bf15f68cdba86b359f472f"
         };
-        
-        // Esperar a Google
-        const timer = setInterval(() => {
-            if (typeof firebase !== 'undefined') {
-                clearInterval(timer);
-                firebase.initializeApp(config);
-                firebase.auth().onAuthStateChanged(user => {
-                    document.getElementById('auth-section').style.display = user ? 'none' : 'block';
-                    document.getElementById('app-section').style.display = user ? 'block' : 'none';
-                    if(user) show();
-                });
+
+        firebase.initializeApp(config);
+        const db = firebase.firestore();
+
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('app-section').style.display = 'block';
+                show();
+            } else {
+                document.getElementById('auth-section').style.display = 'block';
+                document.getElementById('app-section').style.display = 'none';
             }
-        }, 500);
+        });
 
         function registro() {
             const e = document.getElementById('email').value;
             const p = document.getElementById('password').value;
-            firebase.auth().createUserWithEmailAndPassword(e, p).then(() => alert("¡Ok!")).catch(err => alert(err.message));
+            if(!e || p.length < 6) return alert("Email y clave (mín. 6 letras) necesarios.");
+            firebase.auth().createUserWithEmailAndPassword(e, p)
+                .then(() => alert("¡Registrado con éxito! Ya puedes entrar."))
+                .catch(err => alert("Error: " + err.message));
         }
+
         function login() {
             const e = document.getElementById('email').value;
             const p = document.getElementById('password').value;
-            firebase.auth().signInWithEmailAndPassword(e, p).catch(err => alert(err.message));
+            firebase.auth().signInWithEmailAndPassword(e, p).catch(err => alert("Error: " + err.message));
         }
+
         function add() {
-            const n = prompt("Nombre:");
-            if(n) firebase.firestore().collection("familiares").add({ nombre: n, fecha: Date.now() });
+            const n = prompt("Nombre completo:");
+            if(n) db.collection("familiares").add({ nombre: n, fecha: Date.now() });
         }
+
         function show() {
-            firebase.firestore().collection("familiares").orderBy("fecha", "asc").onSnapshot(snap => {
-                const l = document.getElementById('lista'); l.innerHTML = '';
-                snap.forEach(doc => { l.innerHTML += `<div style="background:white; padding:10px; margin:5px; border-radius:5px;">${doc.data().nombre}</div>`; });
+            db.collection("familiares").orderBy("fecha", "asc").onSnapshot(snap => {
+                const cont = document.getElementById('arbol');
+                cont.innerHTML = '';
+                snap.forEach(doc => {
+                    cont.innerHTML += `<div class="f-card"><strong>${doc.data().nombre}</strong></div>`;
+                });
             });
         }
     </script>
