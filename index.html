@@ -4,19 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Árbol Familiar</title>
+    
+    <!-- CONEXIÓN DIRECTA Y SEGURA -->
     <script src="https://gstatic.com"></script>
     <script src="https://gstatic.com"></script>
     <script src="https://gstatic.com"></script>
+
     <style>
         body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 300px; text-align: center; }
         input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
         button { width: 100%; padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; background: #4a90e2; color: white; }
         #app-section { display: none; text-align: center; width: 100%; }
+        .grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 20px; }
+        .f-card { background: white; padding: 15px; border-radius: 10px; width: 140px; border-bottom: 4px solid #4a90e2; }
     </style>
 </head>
 <body>
 
+    <!-- PANTALLA DE ACCESO -->
     <div id="auth-section" class="card">
         <h2>🌳 Acceso</h2>
         <input type="email" id="email" placeholder="Email">
@@ -25,11 +31,12 @@
         <button style="background:none; color:#4a90e2;" onclick="registro()">Registrar cuenta nueva</button>
     </div>
 
+    <!-- PANTALLA DEL ÁRBOL -->
     <div id="app-section">
         <h1>🌳 Panel del Árbol</h1>
         <button onclick="firebase.auth().signOut()" style="width:auto; background:#666;">Salir</button>
         <button onclick="add()" style="width:auto; background:#28a745; padding: 15px;">➕ Añadir Familiar</button>
-        <div id="lista" style="margin-top:20px; display:flex; flex-wrap:wrap; justify-content:center; gap:10px;"></div>
+        <div id="lista" class="grid"></div>
     </div>
 
     <script>
@@ -42,9 +49,11 @@
             appId: "1:353168063870:web:bf15f68cdba86b359f472f"
         };
 
+        // INICIALIZACIÓN
         firebase.initializeApp(config);
         const db = firebase.firestore();
 
+        // CONTROL DE PANTALLAS
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('auth-section').style.display = 'none';
@@ -61,23 +70,25 @@
             const p = document.getElementById('password').value;
             if(!e || p.length < 6) return alert("Email y clave de 6 letras obligatorios");
             
-            // Prueba de vida
-            console.log("Intentando registrar...");
-            
             firebase.auth().createUserWithEmailAndPassword(e, p)
-                .then(() => alert("¡Registrado!"))
-                .catch(err => alert("Error: " + err.message));
+                .then(() => alert("¡Registrado con éxito!"))
+                .catch(err => alert("Error de Google: " + err.message));
         }
 
         function login() {
             const e = document.getElementById('email').value;
             const p = document.getElementById('password').value;
-            firebase.auth().signInWithEmailAndPassword(e, p).catch(err => alert("Error: " + err.message));
+            firebase.auth().signInWithEmailAndPassword(e, p)
+                .catch(err => alert("Error al entrar: " + err.message));
         }
 
         function add() {
-            const n = prompt("Nombre:");
-            if(n) db.collection("familiares").add({ nombre: n, autor: firebase.auth().currentUser.email, fecha: Date.now() });
+            const n = prompt("Nombre del familiar:");
+            if(n) db.collection("familiares").add({ 
+                nombre: n, 
+                autor: firebase.auth().currentUser.email, 
+                fecha: Date.now() 
+            });
         }
 
         function show() {
@@ -86,7 +97,7 @@
                 l.innerHTML = '';
                 snap.forEach(doc => {
                     const d = doc.data();
-                    l.innerHTML += `<div style="background:white; padding:15px; border-radius:10px; width:140px; border-bottom:4px solid #4a90e2;"><strong>${d.nombre}</strong></div>`;
+                    l.innerHTML += `<div class="f-card"><strong>${d.nombre}</strong></div>`;
                 });
             });
         }
