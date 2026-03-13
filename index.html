@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nuestro Árbol Familiar</title>
     
-    <!-- CONEXIÓN COMPLETA A GOOGLE (ESTO ES LO QUE CAMBIA) -->
+    <!-- LIBRERÍAS DE GOOGLE (VERSIÓN ESTABLE 8.10.1) -->
     <script src="https://gstatic.com"></script>
     <script src="https://gstatic.com"></script>
     <script src="https://gstatic.com"></script>
@@ -24,10 +24,10 @@
 <body>
 
     <div id="auth-section" class="card">
-        <h2>🌳 Acceso al Árbol</h2>
+        <h2 style="margin-top:0">🌳 Mi Árbol</h2>
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Contraseña (mín. 6 letras)">
-        <button onclick="login()">Entrar</button>
+        <button class="btn-azul" onclick="login()">Entrar</button>
         <button style="background:none; color:var(--azul); border:none; cursor:pointer;" onclick="registro()">Registrarme por primera vez</button>
     </div>
 
@@ -39,23 +39,27 @@
     </div>
 
     <script>
-        const config = {
+        // DATOS EXACTOS DE TU CAPTURA
+        const firebaseConfig = {
             apiKey: "AIzaSyCDpjRUFv6OXId1Ag0a_XqcQ5f9Try74Bs",
-            authDomain: "://firebaseapp.com",
+            authDomain: "family-tree-bb9e7.firebaseapp.com",
             projectId: "family-tree-bb9e7",
             storageBucket: "family-tree-bb9e7.firebasestorage.app",
             messagingSenderId: "353168063870",
-            appId: "1:353168063870:web:bf15f68cdba86b359f472f"
+            appId: "1:353168063870:web:bf15f68cdba86b359f472f",
+            measurementId: "G-2CLMGRCENY"
         };
 
-        firebase.initializeApp(config);
+        // INICIALIZAR GOOGLE
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // CONTROL DE PANTALLAS
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('auth-section').style.display = 'none';
                 document.getElementById('app-section').style.display = 'block';
-                show();
+                cargarArbol();
             } else {
                 document.getElementById('auth-section').style.display = 'block';
                 document.getElementById('app-section').style.display = 'none';
@@ -65,7 +69,8 @@
         function registro() {
             const e = document.getElementById('email').value;
             const p = document.getElementById('password').value;
-            if(!e || p.length < 6) return alert("Email y clave (mín. 6 letras) necesarios.");
+            if(!e || p.length < 6) return alert("Por favor, escribe un email y clave (6 letras mín).");
+            
             firebase.auth().createUserWithEmailAndPassword(e, p)
                 .then(() => alert("¡Registrado con éxito! Ya puedes entrar."))
                 .catch(err => alert("Error: " + err.message));
@@ -79,15 +84,22 @@
 
         function add() {
             const n = prompt("Nombre completo:");
-            if(n) db.collection("familiares").add({ nombre: n, fecha: Date.now() });
+            if(n) {
+                db.collection("familiares").add({
+                    nombre: n,
+                    creadoPor: firebase.auth().currentUser.email,
+                    fecha: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
         }
 
-        function show() {
+        function cargarArbol() {
             db.collection("familiares").orderBy("fecha", "asc").onSnapshot(snap => {
                 const cont = document.getElementById('arbol');
                 cont.innerHTML = '';
                 snap.forEach(doc => {
-                    cont.innerHTML += `<div class="f-card"><strong>${doc.data().nombre}</strong></div>`;
+                    const f = doc.data();
+                    cont.innerHTML += `<div class="f-card"><strong>${f.nombre}</strong></div>`;
                 });
             });
         }
