@@ -3,43 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nuestro Árbol Familiar</title>
-    <style>
-        :root { --azul: #4a90e2; --verde: #28a745; --gris: #f4f7f6; }
-        body { font-family: sans-serif; background: var(--gris); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 320px; text-align: center; }
-        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; font-size: 16px; }
-        .btn-azul { background: var(--azul); color: white; }
-        #app-section { display: none; width: 95%; max-width: 1000px; text-align: center; }
-        .arbol-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-top: 20px; }
-        .f-card { background: white; padding: 20px; border-radius: 12px; width: 160px; border-bottom: 5px solid var(--azul); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
-    </style>
+    <title>Árbol Familiar</title>
+    
+    <!-- 1. CARGAMOS LAS HERRAMIENTAS DE GOOGLE PRIMERO -->
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
+    <script src="https://gstatic.com"></script>
 
-    <!-- CARGA DE LIBRERÍAS SIN BLOQUEOS -->
-    <script src="https://gstatic.com"></script>
-    <script src="https://gstatic.com"></script>
-    <script src="https://gstatic.com"></script>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 300px; text-align: center; }
+        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; background: #4a90e2; color: white; font-size: 16px; }
+        #app-section { display: none; text-align: center; width: 100%; max-width: 800px; }
+        .familiar-box { background: white; padding: 15px; border-radius: 10px; margin: 10px; border-bottom: 4px solid #4a90e2; display: inline-block; width: 150px; }
+    </style>
 </head>
 <body>
 
+    <!-- PANTALLA DE ACCESO -->
     <div id="auth-section" class="card">
         <h2 style="margin-top:0">🌳 Mi Árbol</h2>
         <input type="email" id="email" placeholder="Correo electrónico">
-        <input type="password" id="password" placeholder="Contraseña (6+ letras)">
-        <button class="btn-azul" onclick="login()">Entrar</button>
-        <button style="background:none; color:var(--azul); border:none; cursor:pointer;" onclick="registro()">Registrarme por primera vez</button>
+        <input type="password" id="password" placeholder="Contraseña">
+        <button onclick="login()">Entrar</button>
+        <button style="background:none; color:#4a90e2; font-size:13px; text-decoration:underline;" onclick="registro()">Registrarme por primera vez</button>
     </div>
 
+    <!-- PANTALLA DEL ÁRBOL -->
     <div id="app-section">
-        <button onclick="firebase.auth().signOut()" style="width:auto; float:right; background:#666; color:white; padding: 8px 15px;">Cerrar Sesión</button>
-        <h1 style="color:#333">🌳 Árbol Familiar</h1>
-        <button onclick="añadirFamiliar()" style="background:var(--verde); color:white; width:auto; padding: 15px 30px; font-size: 18px;">➕ Añadir Familiar</button>
-        <div id="arbol" class="arbol-grid"></div>
+        <h1>🌳 Panel Familiar</h1>
+        <button onclick="firebase.auth().signOut()" style="width:auto; background:#666; color:white; padding: 5px 15px;">Cerrar Sesión</button>
+        <br><br>
+        <button onclick="add()" style="background:#28a745; color:white; padding: 15px 30px; font-size: 18px;">➕ Añadir Familiar</button>
+        <div id="lista" style="margin-top:30px;"></div>
     </div>
 
     <script>
-        const firebaseConfig = {
+        // TU CONFIGURACIÓN DE GOOGLE
+        const config = {
             apiKey: "AIzaSyCDpjRUFv6OXId1Ag0a_XqcQ5f9Try74Bs",
             authDomain: "://firebaseapp.com",
             projectId: "family-tree-bb9e7",
@@ -48,29 +50,33 @@
             appId: "1:353168063870:web:bf15f68cdba86b359f472f"
         };
 
-        // INICIALIZAR DIRECTAMENTE
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        // 2. INICIALIZAR (Solo si las herramientas cargaron)
+        if (typeof firebase !== 'undefined') {
+            firebase.initializeApp(config);
+            const db = firebase.firestore();
 
-        // CONTROL DE ACCESO
-        firebase.auth().onAuthStateChanged(user => {
-            if (user) {
-                document.getElementById('auth-section').style.display = 'none';
-                document.getElementById('app-section').style.display = 'block';
-                cargarArbol();
-            } else {
-                document.getElementById('auth-section').style.display = 'block';
-                document.getElementById('app-section').style.display = 'none';
-            }
-        });
+            // CONTROL DE PANTALLAS
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    document.getElementById('auth-section').style.display = 'none';
+                    document.getElementById('app-section').style.display = 'block';
+                    cargarDatos(db);
+                } else {
+                    document.getElementById('auth-section').style.display = 'block';
+                    document.getElementById('app-section').style.display = 'none';
+                }
+            });
+        } else {
+            alert("AVISO: Las herramientas de Google no cargaron. Por favor, refresca la página o desactiva bloqueadores de publicidad.");
+        }
 
         function registro() {
             const e = document.getElementById('email').value;
             const p = document.getElementById('password').value;
-            if(!e || p.length < 6) return alert("Email y clave de 6 letras obligatorios.");
+            if(!e || p.length < 6) return alert("Email y clave (6 letras) necesarios.");
             firebase.auth().createUserWithEmailAndPassword(e, p)
-                .then(() => alert("¡Registrado con éxito! Ya puedes entrar."))
-                .catch(err => alert("Error: " + err.message));
+                .then(() => alert("¡Cuenta creada! Ya puedes entrar."))
+                .catch(err => alert("Error de Google: " + err.message));
         }
 
         function login() {
@@ -79,24 +85,22 @@
             firebase.auth().signInWithEmailAndPassword(e, p).catch(err => alert("Error: " + err.message));
         }
 
-        function añadirFamiliar() {
-            const n = prompt("Nombre completo:");
-            if(n) {
-                db.collection("familiares").add({
-                    nombre: n,
-                    creadoPor: firebase.auth().currentUser.email,
-                    fecha: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            }
+        function add() {
+            const n = prompt("¿Nombre del familiar?");
+            if(n) firebase.firestore().collection("familiares").add({ 
+                nombre: n, 
+                autor: firebase.auth().currentUser.email,
+                fecha: Date.now() 
+            });
         }
 
-        function cargarArbol() {
+        function cargarDatos(db) {
             db.collection("familiares").orderBy("fecha", "asc").onSnapshot(snap => {
-                const cont = document.getElementById('arbol');
-                cont.innerHTML = '';
+                const l = document.getElementById('lista');
+                l.innerHTML = '';
                 snap.forEach(doc => {
-                    const f = doc.data();
-                    cont.innerHTML += `<div class="f-card"><strong>${f.nombre}</strong></div>`;
+                    const d = doc.data();
+                    l.innerHTML += `<div class="familiar-box"><strong>${d.nombre}</strong></div>`;
                 });
             });
         }
