@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Árbol Familiar Compartido</title>
+    <title>Nuestro Árbol Familiar</title>
     <style>
-        :root { --verde: #28a745; --azul: #4a90e2; --gris: #f4f7f6; }
-        body { font-family: sans-serif; background: var(--gris); text-align: center; padding: 20px; }
-        .seccion { display: none; max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .visible { display: block; }
+        :root { --azul: #4a90e2; --verde: #28a745; --gris: #f4f7f6; }
+        body { font-family: sans-serif; background: var(--gris); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 350px; text-align: center; }
         input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
-        button { padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 5px; width: 95%; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; }
         .btn-azul { background: var(--azul); color: white; }
-        .btn-add { background: var(--verde); color: white; width: auto; margin-bottom: 20px; }
-        .arbol-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
-        .card { background: white; padding: 15px; border-radius: 10px; width: 150px; border-bottom: 4px solid var(--azul); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn-link { background: none; color: var(--azul); font-size: 13px; }
+        #app-section { display: none; width: 90%; max-width: 1000px; background: none; box-shadow: none; }
+        .arbol-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-top: 20px; }
+        .f-card { background: white; padding: 15px; border-radius: 10px; width: 150px; border-bottom: 4px solid var(--azul); }
     </style>
 
     <script src="https://gstatic.com"></script>
@@ -23,19 +23,21 @@
 </head>
 <body>
 
-    <div id="auth-section" class="seccion visible">
+    <!-- SECCIÓN ACCESO -->
+    <div id="auth-section" class="card">
         <h2>🌳 Acceso al Árbol</h2>
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Contraseña">
+        <input type="email" id="email" placeholder="Correo electrónico">
+        <input type="password" id="password" placeholder="Contraseña (mín. 6 caracteres)">
         <button class="btn-azul" onclick="login()">Entrar al Árbol</button>
-        <button style="background:none; color:var(--azul);" onclick="registro()">¿Primera vez? Regístrate aquí</button>
+        <button class="btn-link" onclick="registro()">¿Primera vez? Regístrate aquí</button>
     </div>
 
-    <div id="app-section" class="seccion" style="max-width: 1000px; background: transparent; box-shadow: none;">
-        <button onclick="firebase.auth().signOut()" style="width:auto; float:right;">Cerrar Sesión</button>
-        <h1>🌳 Nuestro Árbol</h1>
-        <button class="btn-add" onclick="añadirFamiliar()">➕ Añadir Familiar</button>
-        <div id="arbol" class="arbol-container"></div>
+    <!-- SECCIÓN ÁRBOL -->
+    <div id="app-section">
+        <button onclick="firebase.auth().signOut()" style="width:auto; float:right; background:#666; color:white;">Cerrar Sesión</button>
+        <h1>🌳 Nuestro Árbol Familiar</h1>
+        <button onclick="añadirFamiliar()" style="background:var(--verde); color:white; width:auto; padding: 15px 30px;">➕ Añadir Familiar</button>
+        <div id="arbol" class="arbol-grid"></div>
     </div>
 
     <script>
@@ -55,9 +57,10 @@
         function registro() {
             const e = document.getElementById('email').value;
             const p = document.getElementById('password').value;
-            if(!e || p.length < 6) return alert("Escribe un email y una contraseña de al menos 6 letras");
+            if(!e || p.length < 6) return alert("Por favor, pon un email y una clave de al menos 6 letras.");
+            
             auth.createUserWithEmailAndPassword(e, p)
-                .then(() => alert("¡Cuenta creada! Ya puedes entrar"))
+                .then(() => alert("¡Cuenta creada con éxito!"))
                 .catch(err => alert("Error: " + err.message));
         }
 
@@ -71,17 +74,26 @@
             if (user) {
                 document.getElementById('auth-section').style.display = 'none';
                 document.getElementById('app-section').style.display = 'block';
+                document.body.style.alignItems = 'flex-start';
                 cargarArbol();
             } else {
                 document.getElementById('auth-section').style.display = 'block';
                 document.getElementById('app-section').style.display = 'none';
+                document.body.style.alignItems = 'center';
             }
         });
 
         function añadirFamiliar() {
-            const n = prompt("Nombre:");
-            const p = prompt("Parentesco (ej: Abuelo):");
-            if(n) db.collection("familiares").add({ nombre: n, parentesco: p, creadoPor: auth.currentUser.email, fecha: firebase.firestore.FieldValue.serverTimestamp() });
+            const n = prompt("Nombre completo:");
+            const p = prompt("Parentesco (ej: Abuela, Primo...):");
+            if(n) {
+                db.collection("familiares").add({
+                    nombre: n,
+                    parentesco: p || "Familiar",
+                    creadoPor: auth.currentUser.email,
+                    fecha: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
         }
 
         function cargarArbol() {
@@ -90,7 +102,7 @@
                 cont.innerHTML = '';
                 snap.forEach(doc => {
                     const f = doc.data();
-                    cont.innerHTML += `<div class="card"><strong>${f.nombre}</strong><br><small>${f.parentesco}</small></div>`;
+                    cont.innerHTML += `<div class="f-card"><strong>${f.nombre}</strong><br><small>${f.parentesco}</small></div>`;
                 });
             });
         }
